@@ -44,6 +44,7 @@ async function fetchCursor(type) {
 }
 
 async function insertOrupdate(query){
+  console.log(query);
   var connection = await (mysql.createConnection(CONNECTION_PARAMS));
   await connection.query(query);
   connection.end();
