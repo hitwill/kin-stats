@@ -1,0 +1,19 @@
+{
+  "name": "kin-stellar",
+  "version": "1.0.0",
+  "description": "kin-stellar dashboard to see various stats",
+  "main": "kin-stellar.js",
+  "dependencies": {
+    "bottleneck": "^2.5.1",
+    "promise-mysql": "^3.3.1",
+    "sqlstring": "^2.3.1",
+    "stellar-base": "^0.7.8",
+    "stellar-sdk": "^0.9.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
