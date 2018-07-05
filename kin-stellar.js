@@ -25,7 +25,7 @@ StellarSdk.Network.usePublicNetwork();
 var operations;
 
 
-start();
+//start();
 async function start() {
   fetchOperations();//fetch latest unsaved operations from kin-stellar
 
