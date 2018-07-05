@@ -3,6 +3,7 @@
 var StellarSdk = require('stellar-sdk');
 var mysql = require('promise-mysql');
 var SqlString = require('sqlstring');
+
 const Bottleneck = require("bottleneck");
 const limiter = new Bottleneck({
   maxConcurrent: 1,// Never more than x request running at a time.
@@ -10,7 +11,7 @@ const limiter = new Bottleneck({
   expiration: 3000
 });
 limiter.on('error', function (error) {
-  console.log('limiter error',error);
+  console.log('limiter error', error);
 });
 const dbThrottled = limiter.wrap(insertOrupdate);//throttle the database
 const CONNECTION_PARAMS = {
@@ -24,11 +25,21 @@ var server = new StellarSdk.Server('https://horizon-kin-ecosystem.kininfrastruct
 StellarSdk.Network.usePublicNetwork();
 var operations;
 
-
-//start();
+start();
 async function start() {
   fetchOperations();//fetch latest unsaved operations from kin-stellar
 
+}
+async function deleteLastCursorID(cursor, operationTypes) {
+  //in case of a crash, delete last cursor id used, so it can be refreshed in full
+  var deletePromise = [];
+  var connection = await (mysql.createConnection(CONNECTION_PARAMS));
+  for (let key in operationTypes) {
+    deletePromise.push(connection.query('DELETE FROM ' + operationTypes[key] + ' WHERE cursor_id = ' + cursor));
+  }
+  await Promise.all(deletePromise);
+  connection.end();
+  return (true);
 }
 
 async function fetchCursor(type) {
@@ -43,7 +54,7 @@ async function fetchCursor(type) {
   return (cursor);
 }
 
-async function insertOrupdate(query){
+async function insertOrupdate(query) {
   var connection = await (mysql.createConnection(CONNECTION_PARAMS));
   await connection.query(query);
   connection.end();
@@ -52,8 +63,8 @@ async function insertOrupdate(query){
 function updateCursorQuery(cursor, type) {
   //caution, we're updating asyncronously, so only save latest cursor id
   var query = 'INSERT INTO pagination SET cursor_id = ' +
-  SqlString.escape(cursor) + ', cursor_type =  ' + SqlString.escape(type) +
-    ' ON DUPLICATE KEY UPDATE cursor_id = IF('+cursor+' > cursor_id, ' +
+    SqlString.escape(cursor) + ', cursor_type =  ' + SqlString.escape(type) +
+    ' ON DUPLICATE KEY UPDATE cursor_id = IF(' + cursor + ' > cursor_id, ' +
     SqlString.escape(cursor) + ', cursor_id)';
   return (query);
 }
@@ -61,6 +72,7 @@ function updateCursorQuery(cursor, type) {
 async function fetchOperations() {
   var operationTypes = ['payment', 'create_account'];//only interested in these
   var cursor = await fetchCursor('operations');
+  await deleteLastCursorID(cursor, operationTypes);
   operations = server.operations()
     .cursor(cursor)
     .stream({
@@ -76,7 +88,10 @@ async function parseOperation(operation) {
   record.time = parseDate(operation.created_at);
   record.table = operation.type;//this is the table where we save it
   if (operation.type === 'create_account') {
-    record.fields = { quantity: 1 };
+    record.fields = {
+      quantity: 1,
+      cursor_id: record.cursor
+    };
   }
   if (operation.type === 'payment') {
     if (operation.asset_code !== 'KIN') return (false);//not interested
@@ -84,29 +99,29 @@ async function parseOperation(operation) {
     record.fields =
       {
         quantity: 1,
-        volume: operation.amount
+        volume: operation.amount,
+        cursor_id: record.cursor
       };
   }
   saveData(record, 'operations');
 }
 
-async function saveData(record,cursorType) {
+async function saveData(record, cursorType) {
   var fields;
   var fieldString = [];
   var keyString = [
     'hour = ' + record.time.hour,
     'day = ' + record.time.day,
-    'year = ' +  record.time.year,
+    'year = ' + record.time.year,
   ].join(',');
-  var cursorSql = updateCursorQuery(record.cursor,cursorType);
+  var cursorSql = updateCursorQuery(record.cursor, cursorType);
   var QuerySql = 'INSERT INTO ' + record.table + ' SET ';
   for (let key in record.fields) {
-      fieldString.push(key + ' = ' + key + ' + ' + record.fields[key]);
+    fieldString.push(key + ' = ' + key + ' + ' + record.fields[key]);
   }
-  fields = fieldString.join(','); 
-  QuerySql = QuerySql + keyString + ', ' +  fields;
+  fields = fieldString.join(',');
+  QuerySql = QuerySql + keyString + ', ' + fields;
   QuerySql = QuerySql + ' ON DUPLICATE KEY UPDATE ' + fields;
-
   dbThrottled(cursorSql);//update but don't overwhelm the database
   dbThrottled(QuerySql);
 }
