@@ -7,7 +7,7 @@ var SqlString = require('sqlstring');
 const Bottleneck = require("bottleneck");
 const limiter = new Bottleneck({
   maxConcurrent: 1,// Never more than x request running at a time.
-  minTime: 900, // Wait at least x ms between each request.
+  minTime: 100, // Wait at least x ms between each request.
   expiration: 3000
 });
 limiter.on('error', function (error) {
