@@ -91,21 +91,21 @@ async function parseOperation(operation) {
     record.table = operation.type;//this is the table where we save it
     if (operation.type === 'create_account') {
         record.fields = {
-            quantity: 1,
-            cursor_id: record.cursor
+            quantity: 1
         };
     }
     if (operation.type === 'payment') {
         if (operation.asset_code !== 'KIN') return (false);//not interested
         if (operation.amount > 10000) return (false);//unlikely a user spend
+        record.account_id_from = operation.from;//either Kin foudnation is paying to ME or i'm paying to SOMEONE
+        record.account_id_to = operation.to;//either Kin foudnation is paying to ME or i'm paying to SOMEONE
         record.fields =
             {
                 quantity: 1,
-                volume: operation.amount,
-                cursor_id: record.cursor
+                volume: operation.amount
             };
     }
-    return saveData(record, 'operations');
+    return saveData(record, 'operations'); 
 }
 
 async function saveData(record, cursorType) {
@@ -118,12 +118,18 @@ async function saveData(record, cursorType) {
     ].join(',');
     const cursorSql = updateCursorQuery(record.cursor, cursorType);
     let QuerySql = 'INSERT INTO ' + record.table + ' SET ';
-    for (let key in record.fields) {
+    fieldString.push('cursor_id = '+SqlString.escape(record.cursor));
+    if(typeof record.account_id_from !== 'undefined'){ //for payments
+        fieldString.push('account_id_from = '+SqlString.escape(record.account_id_from));
+        fieldString.push('account_id_to = '+SqlString.escape(record.account_id_to));
+    }
+    for (let key in record.fields) { // these are incremental fields
         fieldString.push(`${key} = ${key} + ${record.fields[key]}`);
     }
     fields = fieldString.join(',');
     QuerySql = QuerySql + keyString + ', ' + fields;
     QuerySql = QuerySql + ' ON DUPLICATE KEY UPDATE ' + fields;
+
     dbThrottled(cursorSql);//update but don't overwhelm the database
     dbThrottled(QuerySql);
 }
