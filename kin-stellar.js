@@ -3,7 +3,8 @@
 const StellarSdk = require('stellar-sdk');
 const mysql = require('promise-mysql');
 const SqlString = require('sqlstring');
-
+const CoinMarketCap = require("node-coinmarketcap");
+const coinmarketcap = new CoinMarketCap({ events: true });
 const Bottleneck = require("bottleneck");
 const limiter = new Bottleneck({
     maxConcurrent: 1,// Never more than x request running at a time.
@@ -25,11 +26,35 @@ const server = new StellarSdk.Server('https://horizon-kin-ecosystem.kininfrastru
 StellarSdk.Network.usePublicNetwork();
 let operations;
 
+async function updateCoinStats() {
+    let capSql;
+    let priceSql;
+    let kinMarketCap;
+    let kinPrice;
+    let btcMarketCap;
+    coinmarketcap.on("KIN", (coin) => {
+        kinMarketCap = SqlString.escape(coin.market_cap_usd);
+        kinPrice = SqlString.escape(coin.price_usd);
+        capSql = 'INSERT INTO key_value SET id = \'KIN_marketcap\', data = ' +
+            kinMarketCap + ' ON DUPLICATE KEY UPDATE data = ' + kinMarketCap;
+        priceSql = 'INSERT INTO key_value SET id = \'KIN_price\', data = ' +
+            kinPrice + ' ON DUPLICATE KEY UPDATE data = ' + kinPrice;
+        dbThrottled(priceSql);
+        dbThrottled(capSql);
+    });
+    coinmarketcap.on("BTC", (coin) => {
+        btcMarketCap = SqlString.escape(coin.market_cap_usd);
+        capSql = 'INSERT INTO key_value SET id = \'BTC_marketcap\', data = ' +
+            btcMarketCap + ' ON DUPLICATE KEY UPDATE data = ' + btcMarketCap;
+        dbThrottled(capSql);
+    });
+}
+
 start();
 
 async function start() {
-    return fetchOperations();//fetch latest unsaved operations from kin-stellar
-
+    fetchOperations();//fetch latest unsaved operations from kin-stellar
+    updateCoinStats();
 }
 
 async function deleteLastCursorID(cursor, operationTypes) {
@@ -105,7 +130,7 @@ async function parseOperation(operation) {
                 volume: operation.amount
             };
     }
-    return saveData(record, 'operations'); 
+    return saveData(record, 'operations');
 }
 
 async function saveData(record, cursorType) {
@@ -118,10 +143,10 @@ async function saveData(record, cursorType) {
     ].join(',');
     const cursorSql = updateCursorQuery(record.cursor, cursorType);
     let QuerySql = 'INSERT INTO ' + record.table + ' SET ';
-    fieldString.push('cursor_id = '+SqlString.escape(record.cursor));
-    if(typeof record.account_id_from !== 'undefined'){ //for payments
-        fieldString.push('account_id_from = '+SqlString.escape(record.account_id_from));
-        fieldString.push('account_id_to = '+SqlString.escape(record.account_id_to));
+    fieldString.push('cursor_id = ' + SqlString.escape(record.cursor));
+    if (typeof record.account_id_from !== 'undefined') { //for payments
+        fieldString.push('account_id_from = ' + SqlString.escape(record.account_id_from));
+        fieldString.push('account_id_to = ' + SqlString.escape(record.account_id_to));
     }
     for (let key in record.fields) { // these are incremental fields
         fieldString.push(`${key} = ${key} + ${record.fields[key]}`);

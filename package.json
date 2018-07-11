@@ -6,6 +6,7 @@
   "dependencies": {
     "bottleneck": "^2.5.1",
     "forever-monitor": "^1.7.1",
+    "node-coinmarketcap": "^0.2.0",
     "promise-mysql": "^3.3.1",
     "sqlstring": "^2.3.1",
     "stellar-base": "^0.7.8",
