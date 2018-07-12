@@ -6,6 +6,7 @@ const SqlString = require('sqlstring');
 const CoinMarketCap = require("node-coinmarketcap");
 const coinmarketcap = new CoinMarketCap({ events: true });
 const Bottleneck = require("bottleneck");
+const request = require('request');
 const limiter = new Bottleneck({
     maxConcurrent: 1,// Never more than x request running at a time.
     minTime: 100, // Wait at least x ms between each request.
@@ -25,36 +26,55 @@ const CONNECTION_PARAMS = {
 const server = new StellarSdk.Server('https://horizon-kin-ecosystem.kininfrastructure.com');
 StellarSdk.Network.usePublicNetwork();
 let operations;
+start();
+async function updateSocialStats() {
+    let sql;
+    request({url:'https://api.coingecko.com/api/v3/coins/kin?localization=false',json:true},
+        function (error, response, coin) {
+            if (!error && response.statusCode == 200) {
+                sql = coinStatsURL('KIN_marketcap_rank',coin.market_cap_rank);
+                dbThrottled(sql);
+                sql = coinStatsURL('KIN_community_score',coin.community_score);
+                dbThrottled(sql);
+                sql = coinStatsURL('KIN_public_interest_score',coin.public_interest_score);
+                dbThrottled(sql);
+                sql = coinStatsURL('KIN_twitter_followers',coin.community_data.twitter_followers);
+                dbThrottled(sql);
+                sql = coinStatsURL('KIN_reddit_subscribers',coin.community_data.reddit_subscribers);
+                dbThrottled(sql);
+                sql = coinStatsURL('KIN_alexa_score',coin.public_interest_stats.alexa_rank);
+                dbThrottled(sql);
+            }
+        });
+}
+
+function coinStatsURL(key, value){
+    let coinStatsURL =  'INSERT INTO key_value SET id = \''+key+'\', data = ' +
+    value + ' ON DUPLICATE KEY UPDATE data = ' + SqlString.escape(value);
+    return(coinStatsURL);
+}
 
 async function updateCoinStats() {
     let capSql;
     let priceSql;
-    let kinMarketCap;
-    let kinPrice;
-    let btcMarketCap;
+   
     coinmarketcap.on("KIN", (coin) => {
-        kinMarketCap = SqlString.escape(coin.market_cap_usd);
-        kinPrice = SqlString.escape(coin.price_usd);
-        capSql = 'INSERT INTO key_value SET id = \'KIN_marketcap\', data = ' +
-            kinMarketCap + ' ON DUPLICATE KEY UPDATE data = ' + kinMarketCap;
-        priceSql = 'INSERT INTO key_value SET id = \'KIN_price\', data = ' +
-            kinPrice + ' ON DUPLICATE KEY UPDATE data = ' + kinPrice;
+        capSql = coinStatsURL('KIN_marketcap',coin.market_cap_usd); 
+        priceSql = coinStatsURL('KIN_price',coin.price_usd); 
         dbThrottled(priceSql);
         dbThrottled(capSql);
+        updateSocialStats();//fetch social stats from coingecko - doesn't have a timer, so we just use this
     });
     coinmarketcap.on("BTC", (coin) => {
-        btcMarketCap = SqlString.escape(coin.market_cap_usd);
-        capSql = 'INSERT INTO key_value SET id = \'BTC_marketcap\', data = ' +
-            btcMarketCap + ' ON DUPLICATE KEY UPDATE data = ' + btcMarketCap;
+        capSql = coinStatsURL('BTC_marketcap',coin.market_cap_usd); 
         dbThrottled(capSql);
     });
 }
 
-start();
 
 async function start() {
     fetchOperations();//fetch latest unsaved operations from kin-stellar
-    updateCoinStats();
+    updateCoinStats();//fetch prices
 }
 
 async function deleteLastCursorID(cursor, operationTypes) {
