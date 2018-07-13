@@ -28,6 +28,7 @@ StellarSdk.Network.usePublicNetwork();
 let operations;
 
 function getK(price_0,price_1,nodes_0,nodes_1){
+    if(price_1 < price_0) return(false);
     //for now, we'll use a basic way to get the constant. Can update in the future
     //we'll assume the equation is linear and k is the gradient
     let k = (price_1-price_0)/(nodes_1-nodes_0); //k=dy/dx for now
@@ -50,6 +51,7 @@ async function updateMetacalf(){
     let nodes_1 = result[1].daily_active_users;
     let nodes = nodes_1*1.5;
     let k = getK(price_0,price_1,nodes_0,nodes_1);
+    if(k===false)return(0);
     for (let n = 2; n <= 9; n++) {  //update forecast n > 2 nodes
         forecastedPrice = Number(k*nodes*Math.log(nodes)).toFixed(8);
         sql = 'UPDATE metacalf SET price = '+forecastedPrice+', daily_active_users = ' + nodes +
