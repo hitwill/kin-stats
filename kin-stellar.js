@@ -54,6 +54,7 @@ async function updateMetacalf(){
     if(k===false)return(0);
     for (let n = 2; n <= 9; n++) {  //update forecast n > 2 nodes
         forecastedPrice = Number(k*nodes*Math.log(nodes)).toFixed(8);
+        if(forecastedPrice < price_1) forecastedPrice = price_1;
         sql = 'UPDATE metacalf SET price = '+forecastedPrice+', daily_active_users = ' + nodes +
             ' WHERE n = ' + n;
         dbThrottled(sql);
