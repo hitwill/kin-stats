@@ -7,6 +7,7 @@ const CoinMarketCap = require("node-coinmarketcap");
 const coinmarketcap = new CoinMarketCap({ events: true });
 const Bottleneck = require("bottleneck");
 const request = require('request');
+const algebra = require("algebra.js");
 const limiter = new Bottleneck({
     maxConcurrent: 1,// Never more than x request running at a time.
     minTime: 100, // Wait at least x ms between each request.
@@ -23,15 +24,20 @@ const CONNECTION_PARAMS = {
     database: 'kin'
 };
 
+
+
 const server = new StellarSdk.Server('https://horizon-kin-ecosystem.kininfrastructure.com');
 StellarSdk.Network.usePublicNetwork();
 let operations;
+start();
 
 function getK(price_0,price_1,nodes_0,nodes_1){
     if(price_1 < price_0) return(false);
-    //for now, we'll use a basic way to get the constant. Can update in the future
-    //we'll assume the equation is linear and k is the gradient
-    let k = (price_1-price_0)/(nodes_1-nodes_0); //k=dy/dx for now
+    let x1 = new algebra.parse(Math.log(nodes_0)*nodes_0 + 'k-'+price_0);
+    let x2 = new algebra.parse(Math.log(nodes_1)*nodes_1 + 'k-'+price_1);
+    let eq = new algebra.Equation(x1, x2);
+    let sol = eq.solveFor('k');
+    let k = sol.numer/sol.denom;
     return(k);
 }
 
@@ -62,7 +68,7 @@ async function updateMetacalf(){
     }
     
 }
-start();
+
 async function updateSocialStats() {
     let sql;
     request({url:'https://api.coingecko.com/api/v3/coins/kin?localization=false',json:true},
