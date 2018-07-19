@@ -19,10 +19,10 @@ limiter.on('error', function (error) {
 const dbThrottled = limiter.wrap(insertOrUpdate);//throttle the database
 const connectionParams = url2obj(process.env.DB_CREDENTIALS);
 const CONNECTION_PARAMS = {
-    host: connectionParams.hostname,
-    user: connectionParams.user,
-    password: connectionParams.password,
-    database: connectionParams.segments[0]
+    host: '92.222.155.51',//connectionParams.hostname,
+    user: 'kinmetrics',//connectionParams.user,
+    password: 'k!nm3Tric$',//connectionParams.password,
+    database: 'kin'//,connectionParams.segments[0]
 };
 
 
@@ -32,7 +32,7 @@ StellarSdk.Network.usePublicNetwork();
 
 
 let operations;
-//start();
+start();
 
 function getK(price_0,price_1,nodes_0,nodes_1){
     if(price_1 < price_0) return(false);
