@@ -33,12 +33,6 @@
       "id": "singlestat",
       "name": "Singlestat",
       "version": "5.0.0"
-    },
-    {
-      "type": "panel",
-      "id": "table",
-      "name": "Table",
-      "version": "5.0.0"
     }
   ],
   "annotations": {
@@ -389,58 +383,99 @@
       "valueName": "avg"
     },
     {
-      "columns": [],
+      "aliasColors": {},
+      "bars": true,
+      "dashLength": 10,
+      "dashes": false,
       "datasource": "${DS_KIN}",
-      "description": "NV = k . n . log(n)\n\nNV = value (price)\nk = proportionality constant\nn = number of nodes\n\nNote 1: k is calculated dynamically from only two data points for now.\n\nNote 2: this is not a price predictor, but simply an experiment to see how closely Kin follows Metacalf's law",
-      "fontSize": "100%",
+      "description": "NV = k . n . log(n)\n\nNV = value (price)\nk = proportionality constant\nn = number of nodes\n\nNote 1: k is calculated dynamically from two data points.\n\nNote 2: this is not a price predictor, but simply an experiment to see how closely Kin follows Metacalf's law",
+      "fill": 1,
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
         "y": 8
       },
-      "id": 32,
-      "links": [],
-      "pageSize": null,
-      "scroll": true,
-      "showHeader": true,
-      "sort": {
-        "col": 0,
-        "desc": false
+      "id": 34,
+      "legend": {
+        "alignAsTable": false,
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
       },
-      "styles": [
+      "lines": false,
+      "linewidth": 1,
+      "links": [
         {
-          "alias": "Time",
-          "dateFormat": "YYYY-MM-DD HH:mm:ss",
-          "pattern": "Time",
-          "type": "date"
-        },
-        {
-          "alias": "",
-          "colorMode": null,
-          "colors": [
-            "rgba(245, 54, 54, 0.9)",
-            "rgba(237, 129, 40, 0.89)",
-            "rgba(50, 172, 45, 0.97)"
-          ],
-          "decimals": 2,
-          "pattern": "/.*/",
-          "thresholds": [],
-          "type": "number",
-          "unit": "short"
+          "title": "Calculation details",
+          "type": "absolute",
+          "url": "https://www.reddit.com/r/KinFoundation/comments/8yq8xb/revisiting_metacalf/"
         }
       ],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
       "targets": [
         {
           "alias": "",
-          "format": "table",
-          "rawSql": "SELECT daily_active_users, price as 'projected price' from metacalf order by daily_active_users asc",
+          "format": "time_series",
+          "hide": false,
+          "rawSql": "SELECT now() as time,  CONVERT(FORMAT(daily_active_users,0), CHAR) as metric, price as 'projected price' from metacalf WHERE n > 1",
           "refId": "A"
         }
       ],
-      "title": "Metacalf's law projections - beta",
-      "transform": "table",
-      "type": "table"
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Metcalf projections - Daily Active Users to Price",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "transparent": true,
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "series",
+        "name": null,
+        "show": true,
+        "values": [
+          "current"
+        ]
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "Price",
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
     },
     {
       "cacheTimeout": null,
@@ -1866,5 +1901,5 @@
   "timezone": "browser",
   "title": "Kin Statistics",
   "uid": "Wv3AjfDik",
-  "version": 113
+  "version": 12
 }

@@ -17,17 +17,20 @@ limiter.on('error', function (error) {
     console.log('limiter error', error);
 });
 const dbThrottled = limiter.wrap(insertOrUpdate);//throttle the database
+const connectionParams = url2obj(process.env.DB_CREDENTIALS);
 const CONNECTION_PARAMS = {
-    host: '92.222.155.51',
-    user: 'kinmetrics',
-    password: 'k!nm3Tric$',
-    database: 'kin'
+    host: connectionParams.hostname,
+    user: connectionParams.user,
+    password: connectionParams.password,
+    database: connectionParams.segments[0]
 };
 
 
 
 const server = new StellarSdk.Server('https://horizon-kin-ecosystem.kininfrastructure.com');
 StellarSdk.Network.usePublicNetwork();
+
+
 let operations;
 start();
 
@@ -241,6 +244,29 @@ function reveal(obj, stop) {
     console.log(JSON.stringify(obj, null, 2));
     if (stop) process.exit();
 }
+
+function url2obj(url) {
+    var pattern = /^(?:([^:\/?#\s]+):\/{2})?(?:([^@\/?#\s]+)@)?([^\/?#\s]+)?(?:\/([^?#\s]*))?(?:[?]([^#\s]+))?\S*$/;
+    var matches =  url.match(pattern);
+    var params = {};
+    if (matches[5] != undefined) {
+      matches[5].split('&').map(function(x){
+        var a = x.split('=');
+        params[a[0]]=a[1];
+      });
+    }
+  
+    return {
+      protocol: matches[1],
+      user: matches[2] != undefined ? matches[2].split(':')[0] : undefined,
+      password: matches[2] != undefined ? matches[2].split(':')[1] : undefined,
+      host: matches[3],
+      hostname: matches[3] != undefined ? matches[3].split(/:(?=\d+$)/)[0] : undefined,
+      port: matches[3] != undefined ? matches[3].split(/:(?=\d+$)/)[1] : undefined,
+      segments : matches[4] != undefined ? matches[4].split('/') : undefined,
+      params: params
+    };
+  }
 
 //Error handlers
 process.on('unhandledRejection', (err) => {

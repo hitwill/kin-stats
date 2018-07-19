@@ -1,5 +1,3 @@
-CREATE DATABASE  IF NOT EXISTS `kin` /*!40100 DEFAULT CHARACTER SET latin1 */;
-USE `kin`;
 -- MySQL dump 10.13  Distrib 5.7.17, for Win64 (x86_64)
 --
 -- Host: 92.222.155.51    Database: kin
@@ -78,6 +76,20 @@ DELIMITER ;
 /*!50003 SET collation_connection  = @saved_col_connection */ ;
 
 --
+-- Table structure for table `hourly_active_users`
+--
+
+DROP TABLE IF EXISTS `hourly_active_users`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `hourly_active_users` (
+  `time_period` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `quantity` int(11) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`time_period`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `key_value`
 --
 
@@ -89,6 +101,50 @@ CREATE TABLE `key_value` (
   `data` varchar(1000) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='Just hold random key value pairs for data';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8 */ ;
+/*!50003 SET character_set_results = utf8 */ ;
+/*!50003 SET collation_connection  = utf8_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`kinmetrics`@`%`*/ /*!50003 TRIGGER metacalf
+    AFTER UPDATE ON key_value
+    FOR EACH ROW 
+BEGIN
+	UPDATE metacalf SET price = 
+		(SELECT key_value.data FROM key_value WHERE key_value.id = 'KIN_price' LIMIT 1)
+        WHERE n =1;
+	UPDATE metacalf SET daily_active_users = 
+		(SELECT 
+        COUNT(`user_activity`.`account_id`) 
+    FROM
+        `user_activity` WHERE last_active >= DATE_SUB(NOW(), INTERVAL 1 DAY))
+        WHERE n =1;    
+      
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+
+--
+-- Table structure for table `metacalf`
+--
+
+DROP TABLE IF EXISTS `metacalf`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `metacalf` (
+  `n` tinyint(3) unsigned NOT NULL DEFAULT '0',
+  `daily_active_users` int(10) unsigned NOT NULL DEFAULT '0',
+  `price` double(11,8) DEFAULT '0.00000000',
+  PRIMARY KEY (`n`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='A projection of the price using metacalf''s law (actually, zipps modification of it). The first data-point at n=100 is constant. The second one is updated by a trigger. The subsequent ones are calculated dynamically from code';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -150,21 +206,18 @@ DELIMITER ;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
 /*!50003 SET @saved_col_connection = @@collation_connection */ ;
-/*!50003 SET character_set_client  = utf8 */ ;
-/*!50003 SET character_set_results = utf8 */ ;
-/*!50003 SET collation_connection  = utf8_general_ci */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`kinmetrics`@`%`*/ /*!50003 TRIGGER userActivityInsert
-    AFTER INSERT ON payment
-    FOR EACH ROW 
-BEGIN
-	INSERT INTO user_activity SET account_id = NEW.account_id_from
-    ON duplicate key update last_active = NOW();
-    INSERT INTO user_activity SET account_id = NEW.account_id_to
-    ON duplicate key update last_active = NOW();
-      
+/*!50003 CREATE*/ /*!50017 DEFINER=`kinmetrics`@`%`*/ /*!50003 TRIGGER `paymentAfterInsert` AFTER INSERT ON `payment` FOR EACH ROW BEGIN
+	INSERT INTO user_activity SET account_id = NEW.account_id_from
+    ON duplicate key update last_active = NOW();
+    INSERT INTO user_activity SET account_id = NEW.account_id_to
+    ON duplicate key update last_active = NOW();
+    
 END */;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -195,21 +248,18 @@ DELIMITER ;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
 /*!50003 SET @saved_col_connection = @@collation_connection */ ;
-/*!50003 SET character_set_client  = utf8 */ ;
-/*!50003 SET character_set_results = utf8 */ ;
-/*!50003 SET collation_connection  = utf8_general_ci */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`kinmetrics`@`%`*/ /*!50003 TRIGGER userActivityUpdate
-    AFTER UPDATE ON payment
-    FOR EACH ROW 
-BEGIN
-	INSERT INTO user_activity SET account_id = NEW.account_id_from
-    ON duplicate key update last_active = NOW();
-    INSERT INTO user_activity SET account_id = NEW.account_id_to
-    ON duplicate key update last_active = NOW();
-      
+/*!50003 CREATE*/ /*!50017 DEFINER=`kinmetrics`@`%`*/ /*!50003 TRIGGER `paymentAfterUpdate` AFTER UPDATE ON `payment` FOR EACH ROW BEGIN
+	INSERT INTO user_activity SET account_id = NEW.account_id_from
+    ON duplicate key update last_active = NOW();
+    INSERT INTO user_activity SET account_id = NEW.account_id_to
+    ON duplicate key update last_active = NOW();
+      
 END */;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -230,6 +280,42 @@ CREATE TABLE `user_activity` (
   PRIMARY KEY (`account_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='Hold activity of individual users';
 /*!40101 SET character_set_client = @saved_cs_client */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `userActivityAfterInsert` AFTER INSERT ON `user_activity` FOR EACH ROW BEGIN
+		INSERT INTO hourly_active_users (time_period, quantity) VALUES (DATE_ADD(DATE_FORMAT(NEW.last_active, "%Y-%m-%d %H:00:00"),INTERVAL 0 HOUR), 1)
+		ON DUPLICATE KEY UPDATE quantity = quantity + 1;
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `userActivityAfterUpdate` AFTER UPDATE ON `user_activity` FOR EACH ROW IF (DATE_ADD(DATE_FORMAT(NEW.last_active, "%Y-%m-%d %H:00:00"),INTERVAL 0 HOUR) != DATE_ADD(DATE_FORMAT(OLD.last_active, "%Y-%m-%d %H:00:00"),INTERVAL 0 HOUR)) THEN
+	INSERT INTO hourly_active_users (time_period, quantity) VALUES (DATE_ADD(DATE_FORMAT(NEW.last_active, "%Y-%m-%d %H:00:00"),INTERVAL 0 HOUR), 1)
+	ON DUPLICATE KEY UPDATE quantity = quantity + 1;
+END IF */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -240,4 +326,4 @@ CREATE TABLE `user_activity` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2018-07-11 15:42:01
+-- Dump completed on 2018-07-15 11:38:13
