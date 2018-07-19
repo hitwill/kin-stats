@@ -32,7 +32,7 @@ StellarSdk.Network.usePublicNetwork();
 
 
 let operations;
-start();
+//start();
 
 function getK(price_0,price_1,nodes_0,nodes_1){
     if(price_1 < price_0) return(false);
