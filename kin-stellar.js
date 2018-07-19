@@ -17,7 +17,7 @@ limiter.on('error', function (error) {
     console.log('limiter error', error);
 });
 const dbThrottled = limiter.wrap(insertOrUpdate);//throttle the database
-const connectionParams = url2obj(process.env.DB_CREDENTIALS);
+//const connectionParams = url2obj(process.env.DB_CREDENTIALS);
 const CONNECTION_PARAMS = {
     host: '92.222.155.51',//connectionParams.hostname,
     user: 'kinmetrics',//connectionParams.user,
@@ -31,7 +31,15 @@ const server = new StellarSdk.Server('https://horizon-kin-ecosystem.kininfrastru
 StellarSdk.Network.usePublicNetwork();
 
 
+async function test(){
+    const connection = await (mysql.createConnection(CONNECTION_PARAMS));
+    const result = await connection.query('UPDATE key_value SET data = 0.16 WHERE id = "KIN_price"');
+    connection.end();
+    reveal(result);
+}
+
 let operations;
+//test();
 start();
 
 function getK(price_0,price_1,nodes_0,nodes_1){
