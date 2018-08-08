@@ -30,7 +30,6 @@ const CONNECTION_PARAMS = {
 const server = new StellarSdk.Server('https://horizon-kin-ecosystem.kininfrastructure.com');
 StellarSdk.Network.usePublicNetwork();
 
-
 async function test(){
     const connection = await (mysql.createConnection(CONNECTION_PARAMS));
     const result = await connection.query('UPDATE key_value SET data = 0.16 WHERE id = "KIN_price"');
