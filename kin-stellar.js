@@ -228,8 +228,8 @@ async function saveData(record, cursorType) {
     QuerySql = QuerySql + keyString + ', ' + fields;
     QuerySql = QuerySql + ' ON DUPLICATE KEY UPDATE ' + fields;
 
-    dbThrottled(cursorSql);//update but don't overwhelm the database
-    dbThrottled(QuerySql);
+    dbThrottled(QuerySql);//update but don't overwhelm the database
+    dbThrottled(cursorSql);
 }
 
 function daysIntoYear(date) {
