@@ -1,3 +1,5 @@
+reveal('paused');
+
 //https://www.stellar.org/developers/js-stellar-sdk/reference/
 //https://github.com/stellar/js-stellar-sdk/tree/master/docs/reference
 const StellarSdk = require('stellar-sdk');
