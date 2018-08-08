@@ -25,7 +25,6 @@ const CONNECTION_PARAMS = {
     database: 'kin'//,connectionParams.segments[0]
 };
 
-reveal('testing');
 
 const server = new StellarSdk.Server('https://horizon-kin-ecosystem.kininfrastructure.com');
 StellarSdk.Network.usePublicNetwork();
@@ -172,6 +171,7 @@ function updateCursorQuery(cursor, type) {
 async function fetchOperations() {
     const operationTypes = ['payment', 'create_account'];//only interested in these
     const cursor = await fetchCursor('operations');
+    reveal([cursor,'cursor']);
     await deleteLastCursorID(cursor, operationTypes);
     operations = server.operations()
         .cursor(cursor)
