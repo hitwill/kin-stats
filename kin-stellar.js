@@ -59,11 +59,12 @@ async function updateMetacalf(){
     const connection = await (mysql.createConnection(CONNECTION_PARAMS));
     const result = await connection.query('SELECT * FROM metacalf WHERE n < 2 ORDER BY n asc');
     connection.end();
+    
     if (!result.length > 0) return(false);//database connection error
     let price_0 = result[0].price;
     let price_1 = result[1].price;
     let nodes_0 = result[0].daily_active_users;
-    let nodes_1 = result[1].daily_active_users;
+    let nodes_1 = (result[1].daily_active_users < 100 ? 200 : result[1].daily_active_users);
     let nodes = nodes_1*1.5;
     let k = getK(price_0,price_1,nodes_0,nodes_1);
     if(k===false)return(0);
@@ -171,7 +172,6 @@ function updateCursorQuery(cursor, type) {
 async function fetchOperations() {
     const operationTypes = ['payment', 'create_account'];//only interested in these
     const cursor = await fetchCursor('operations');
-    reveal([cursor,'cursor']);
     await deleteLastCursorID(cursor, operationTypes);
     operations = server.operations()
         .cursor(cursor)
