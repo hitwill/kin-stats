@@ -65,8 +65,14 @@ async function updateMetacalf(){
     let price_1 = result[1].price;
     let nodes_0 = result[0].daily_active_users;
     let nodes_1 = (result[1].daily_active_users < 100 ? 200 : result[1].daily_active_users);
-    let nodes = nodes_1*1.5;
-    let k = getK(price_0,price_1,nodes_0,nodes_1);
+    let nodes = nodes_1 * 1.5;
+    let k = false;
+    try {
+        k = getK(price_0, price_1, nodes_0, nodes_1);
+    } catch (e) {
+
+    }
+    
     if(k===false)return(0);
     for (let n = 2; n <= 9; n++) {  //update forecast n > 2 nodes
         forecastedPrice = Number(k*nodes*Math.log(nodes)).toFixed(8);
