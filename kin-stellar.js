@@ -25,7 +25,7 @@ const CONNECTION_PARAMS = {
     database: 'kin'//,connectionParams.segments[0]
 };
 
-
+reveal('testing');
 
 const server = new StellarSdk.Server('https://horizon-kin-ecosystem.kininfrastructure.com');
 StellarSdk.Network.usePublicNetwork();
