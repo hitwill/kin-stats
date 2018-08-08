@@ -1,6 +1,5 @@
 //https://www.stellar.org/developers/js-stellar-sdk/reference/
 //https://github.com/stellar/js-stellar-sdk/tree/master/docs/reference
-reveal('paused');
 const StellarSdk = require('stellar-sdk');
 const mysql = require('promise-mysql');
 const SqlString = require('sqlstring');
