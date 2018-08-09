@@ -10,7 +10,7 @@ const request = require('request');
 const algebra = require("algebra.js");
 const limiter = new Bottleneck({
     maxConcurrent: 1,// Never more than x request running at a time.
-    minTime: 100, // Wait at least x ms between each request.
+    minTime: 5, // Wait at least x ms between each request.
     expiration: 3000
 });
 limiter.on('error', function (error) {
