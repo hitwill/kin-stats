@@ -188,6 +188,24 @@ async function fetchOperations() {
         });
 }
 
+async function updateDominance(transactionURL,volume, day, year) {
+    let sql;
+    request({ url: transactionURL, json: true },
+        function (error, response, payment) {
+            if (!error && response.statusCode == 200) {
+                var app = payment.memo.split('-')[1];
+                if (typeof app === 'undefined') return (false);
+                sql = 'INSERT INTO app_dominance SET app = ' + SqlString.escape(app)
+                    + ', volume = ' + volume 
+                    + ', quantity = 1'
+                    + ', day = ' + day
+                    + ', year = ' + year
+                    + ' ON DUPLICATE KEY UPDATE quantity = quantity + 1, volume = volume + ' + volume;
+                dbThrottled(sql);
+            }
+        });
+}
+
 async function parseOperation(operation) {
     const record = {};
     record.cursor = operation.id;
@@ -201,6 +219,7 @@ async function parseOperation(operation) {
     if (operation.type === 'payment') {
         if (operation.asset_code !== 'KIN') return (false);//not interested
         if (operation.amount > 10000) return (false);//unlikely a user spend
+        updateDominance(operation._links.transaction.href, operation.amount, record.time.day, record.time.year);
         record.account_id_from = operation.from;//either Kin foudnation is paying to ME or i'm paying to SOMEONE
         record.account_id_to = operation.to;//either Kin foudnation is paying to ME or i'm paying to SOMEONE
         record.fields =
