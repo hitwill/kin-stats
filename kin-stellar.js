@@ -192,8 +192,14 @@ async function updateDominance(transactionURL,volume, day, year) {
     let sql;
     request({ url: transactionURL, json: true },
         function (error, response, payment) {
+            let app = '';
             if (!error && response.statusCode == 200) {
-                var app = payment.memo.split('-')[1];
+                try {
+                    app = payment.memo.split('-')[1];
+                } catch (e) {//no memo in payment
+                    return (false);
+                }
+                
                 if (typeof app === 'undefined') return (false);
                 sql = 'INSERT INTO app_dominance SET app = ' + SqlString.escape(app)
                     + ', volume = ' + volume 
