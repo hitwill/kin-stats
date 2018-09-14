@@ -29,7 +29,7 @@ const CONNECTION_PARAMS = {
 const server = new StellarSdk.Server('https://horizon-kin-ecosystem.kininfrastructure.com');
 StellarSdk.Network.usePublicNetwork();
 
-async function test(){
+async function test() {
     const connection = await (mysql.createConnection(CONNECTION_PARAMS));
     const result = await connection.query('UPDATE key_value SET data = 0.16 WHERE id = "KIN_price"');
     connection.end();
@@ -40,17 +40,17 @@ let operations;
 //test();
 start();
 
-function getK(price_0,price_1,nodes_0,nodes_1){
-    if(price_1 < price_0) return(false);
-    let x1 = new algebra.parse(Math.log(nodes_0)*nodes_0 + 'k-'+price_0);
-    let x2 = new algebra.parse(Math.log(nodes_1)*nodes_1 + 'k-'+price_1);
+function getK(price_0, price_1, nodes_0, nodes_1) {
+    if (price_1 < price_0) return (false);
+    let x1 = new algebra.parse(Math.log(nodes_0) * nodes_0 + 'k-' + price_0);
+    let x2 = new algebra.parse(Math.log(nodes_1) * nodes_1 + 'k-' + price_1);
     let eq = new algebra.Equation(x1, x2);
     let sol = eq.solveFor('k');
-    let k = sol.numer/sol.denom;
-    return(k);
+    let k = sol.numer / sol.denom;
+    return (k);
 }
 
-async function updateMetacalf(){
+async function updateMetacalf() {
     //first get prices and number of users at n = 0 and 1
     //NV_0 = k.n.ln(n) at price 0, nodes 0
     //NV_1 = k.n.ln(n) at price 1, nodes 1
@@ -59,8 +59,8 @@ async function updateMetacalf(){
     const connection = await (mysql.createConnection(CONNECTION_PARAMS));
     const result = await connection.query('SELECT * FROM metacalf WHERE n < 2 ORDER BY n asc');
     connection.end();
-    
-    if (!result.length > 0) return(false);//database connection error
+
+    if (!result.length > 0) return (false);//database connection error
     let price_0 = result[0].price;
     let price_1 = result[1].price;
     let nodes_0 = result[0].daily_active_users;
@@ -72,60 +72,60 @@ async function updateMetacalf(){
     } catch (e) {
 
     }
-    
-    if(k===false)return(0);
+
+    if (k === false) return (0);
     for (let n = 2; n <= 9; n++) {  //update forecast n > 2 nodes
-        forecastedPrice = Number(k*nodes*Math.log(nodes)).toFixed(8);
-        if(forecastedPrice < price_1) forecastedPrice = price_1;
-        sql = 'UPDATE metacalf SET price = '+forecastedPrice+', daily_active_users = ' + nodes +
+        forecastedPrice = Number(k * nodes * Math.log(nodes)).toFixed(8);
+        if (forecastedPrice < price_1) forecastedPrice = price_1;
+        sql = 'UPDATE metacalf SET price = ' + forecastedPrice + ', daily_active_users = ' + nodes +
             ' WHERE n = ' + n;
         dbThrottled(sql);
-        nodes=Math.round(nodes*1.5);
+        nodes = Math.round(nodes * 1.5);
     }
-    
+
 }
 
 async function updateSocialStats() {
     let sql;
-    request({url:'https://api.coingecko.com/api/v3/coins/kin?localization=false',json:true},
+    request({ url: 'https://api.coingecko.com/api/v3/coins/kin?localization=false', json: true },
         function (error, response, coin) {
             if (!error && response.statusCode == 200) {
-                sql = coinStatsURL('KIN_marketcap_rank',coin.market_cap_rank);
+                sql = coinStatsURL('KIN_marketcap_rank', coin.market_cap_rank);
                 dbThrottled(sql);
-                sql = coinStatsURL('KIN_community_score',coin.community_score);
+                sql = coinStatsURL('KIN_community_score', coin.community_score);
                 dbThrottled(sql);
-                sql = coinStatsURL('KIN_public_interest_score',coin.public_interest_score);
+                sql = coinStatsURL('KIN_public_interest_score', coin.public_interest_score);
                 dbThrottled(sql);
-                sql = coinStatsURL('KIN_twitter_followers',coin.community_data.twitter_followers);
+                sql = coinStatsURL('KIN_twitter_followers', coin.community_data.twitter_followers);
                 dbThrottled(sql);
-                sql = coinStatsURL('KIN_reddit_subscribers',coin.community_data.reddit_subscribers);
+                sql = coinStatsURL('KIN_reddit_subscribers', coin.community_data.reddit_subscribers);
                 dbThrottled(sql);
-                sql = coinStatsURL('KIN_alexa_score',coin.public_interest_stats.alexa_rank);
+                sql = coinStatsURL('KIN_alexa_score', coin.public_interest_stats.alexa_rank);
                 dbThrottled(sql);
             }
         });
 }
 
-function coinStatsURL(key, value){
-    let coinStatsURL =  'INSERT INTO key_value SET id = \''+key+'\', data = ' +
-    value + ' ON DUPLICATE KEY UPDATE data = ' + SqlString.escape(value);
-    return(coinStatsURL);
+function coinStatsURL(key, value) {
+    let coinStatsURL = 'INSERT INTO key_value SET id = \'' + key + '\', data = ' +
+        value + ' ON DUPLICATE KEY UPDATE data = ' + SqlString.escape(value);
+    return (coinStatsURL);
 }
 
 async function updateCoinStats() {
     let capSql;
     let priceSql;
-   
+
     coinmarketcap.on("KIN", (coin) => {
-        capSql = coinStatsURL('KIN_marketcap',coin.market_cap_usd); 
-        priceSql = coinStatsURL('KIN_price',coin.price_usd); 
+        capSql = coinStatsURL('KIN_marketcap', coin.market_cap_usd);
+        priceSql = coinStatsURL('KIN_price', coin.price_usd);
         dbThrottled(priceSql);
         dbThrottled(capSql);
         updateSocialStats();//fetch social stats from coingecko - doesn't have a timer, so we just use this
         updateMetacalf();//estimate metacalf's future prices
     });
     coinmarketcap.on("BTC", (coin) => {
-        capSql = coinStatsURL('BTC_marketcap',coin.market_cap_usd); 
+        capSql = coinStatsURL('BTC_marketcap', coin.market_cap_usd);
         dbThrottled(capSql);
     });
 }
@@ -188,7 +188,7 @@ async function fetchOperations() {
         });
 }
 
-async function updateDominance(transactionURL,volume, day, year) {
+async function updateDominance(transactionURL, volume, day, year) {
     let sql;
     request({ url: transactionURL, json: true },
         function (error, response, payment) {
@@ -199,12 +199,12 @@ async function updateDominance(transactionURL,volume, day, year) {
                 } catch (e) {//no memo in payment
                     return (false);
                 }
-                
+
                 if (typeof app === 'undefined') return (false);
                 if (app == null) return (false);
                 if (app == 'null') return (false);
                 sql = 'INSERT INTO app_dominance SET app = ' + SqlString.escape(app)
-                    + ', volume = ' + volume 
+                    + ', volume = ' + volume
                     + ', quantity = 1'
                     + ', day = ' + day
                     + ', year = ' + year
@@ -214,11 +214,16 @@ async function updateDominance(transactionURL,volume, day, year) {
         });
 }
 
+
+
 async function parseOperation(operation) {
     const record = {};
     record.cursor = operation.id;
     record.time = parseDate(operation.created_at);
     record.table = operation.type;//this is the table where we save it
+
+    updateOperationsCount(record.time.day, record.time.year);
+
     if (operation.type === 'create_account') {
         record.fields = {
             quantity: 1
@@ -265,6 +270,22 @@ async function saveData(record, cursorType) {
     dbThrottled(cursorSql);
 }
 
+
+async function updateOperationsCount(day, year) {
+    let sql;
+    let app = '';
+
+    sql = 'INSERT INTO operations SET '
+        + ' quantity = 1'
+        + ', day = ' + day
+        + ', year = ' + year
+        + ' ON DUPLICATE KEY UPDATE quantity = quantity + 1';
+    dbThrottled(sql);
+}
+
+
+
+
 function daysIntoYear(date) {
     return (Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) - Date.UTC(date.getFullYear(), 0, 0)) / 24 / 60 / 60 / 1000;
 }
@@ -287,26 +308,26 @@ function reveal(obj, stop) {
 
 function url2obj(url) {
     var pattern = /^(?:([^:\/?#\s]+):\/{2})?(?:([^@\/?#\s]+)@)?([^\/?#\s]+)?(?:\/([^?#\s]*))?(?:[?]([^#\s]+))?\S*$/;
-    var matches =  url.match(pattern);
+    var matches = url.match(pattern);
     var params = {};
     if (matches[5] != undefined) {
-      matches[5].split('&').map(function(x){
-        var a = x.split('=');
-        params[a[0]]=a[1];
-      });
+        matches[5].split('&').map(function (x) {
+            var a = x.split('=');
+            params[a[0]] = a[1];
+        });
     }
-  
+
     return {
-      protocol: matches[1],
-      user: matches[2] != undefined ? matches[2].split(':')[0] : undefined,
-      password: matches[2] != undefined ? matches[2].split(':')[1] : undefined,
-      host: matches[3],
-      hostname: matches[3] != undefined ? matches[3].split(/:(?=\d+$)/)[0] : undefined,
-      port: matches[3] != undefined ? matches[3].split(/:(?=\d+$)/)[1] : undefined,
-      segments : matches[4] != undefined ? matches[4].split('/') : undefined,
-      params: params
+        protocol: matches[1],
+        user: matches[2] != undefined ? matches[2].split(':')[0] : undefined,
+        password: matches[2] != undefined ? matches[2].split(':')[1] : undefined,
+        host: matches[3],
+        hostname: matches[3] != undefined ? matches[3].split(/:(?=\d+$)/)[0] : undefined,
+        port: matches[3] != undefined ? matches[3].split(/:(?=\d+$)/)[1] : undefined,
+        segments: matches[4] != undefined ? matches[4].split('/') : undefined,
+        params: params
     };
-  }
+}
 
 //Error handlers
 process.on('unhandledRejection', (err) => {
