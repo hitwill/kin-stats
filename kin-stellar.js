@@ -183,6 +183,7 @@ async function fetchOperations() {
         .cursor(cursor)
         .stream({
             onmessage: function (message) {
+                //updateOperationsCount(record.time.day, record.time.year);
                 if (operationTypes.indexOf(message.type) !== -1) parseOperation(message);
             }
         });
@@ -222,7 +223,6 @@ async function parseOperation(operation) {
     record.time = parseDate(operation.created_at);
     record.table = operation.type;//this is the table where we save it
 
-    updateOperationsCount(record.time.day, record.time.year);
 
     if (operation.type === 'create_account') {
         record.fields = {
