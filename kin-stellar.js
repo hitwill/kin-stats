@@ -8,6 +8,7 @@ const coinmarketcap = new CoinMarketCap({ events: true });
 const Bottleneck = require("bottleneck");
 const request = require('request');
 const algebra = require("algebra.js");
+
 const limiter = new Bottleneck({
     maxConcurrent: 1,// Never more than x request running at a time.
     minTime: 5, // Wait at least x ms between each request.
@@ -175,6 +176,27 @@ function updateCursorQuery(cursor, type) {
     return (query);
 }
 
+function hourOfDay() {
+    var now = new Date();
+    var hour = now.getHours();
+    return (hour);
+}
+
+function currentYear() {
+    var now = new Date();
+    var year = now.getFullYear();
+    return (year);
+}
+
+function dayOfYear() {
+    var now = new Date();
+    var start = new Date(now.getFullYear(), 0, 0);
+    var diff = (now - start) + ((start.getTimezoneOffset() - now.getTimezoneOffset()) * 60 * 1000);
+    var oneDay = 1000 * 60 * 60 * 24;
+    var day = Math.floor(diff / oneDay);
+    return (day);
+}
+
 async function fetchOperations() {
     const operationTypes = ['payment', 'create_account'];//only interested in these
     const cursor = await fetchCursor('operations');
@@ -183,7 +205,7 @@ async function fetchOperations() {
         .cursor(cursor)
         .stream({
             onmessage: function (message) {
-                //updateOperationsCount(record.time.day, record.time.year);
+                updateOperationsCount(hourOfDay(), dayOfYear(), currentYear());
                 if (operationTypes.indexOf(message.type) !== -1) parseOperation(message);
             }
         });
@@ -271,12 +293,13 @@ async function saveData(record, cursorType) {
 }
 
 
-async function updateOperationsCount(day, year) {
+async function updateOperationsCount(hour, day, year) {
     let sql;
     let app = '';
 
     sql = 'INSERT INTO operations SET '
         + ' quantity = 1'
+        + ', hour = ' + hour
         + ', day = ' + day
         + ', year = ' + year
         + ' ON DUPLICATE KEY UPDATE quantity = quantity + 1';
