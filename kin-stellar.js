@@ -224,8 +224,7 @@ async function updateDominance(transactionURL, volume, day, year) {
                 }
 
                 if (typeof app === 'undefined') return (false);
-                if (app == null) return (false);
-                if (app == 'null') return (false);
+                if (app === null) return (false);
                 sql = 'INSERT INTO app_dominance SET app = ' + SqlString.escape(app)
                     + ', volume = ' + volume
                     + ', quantity = 1'
