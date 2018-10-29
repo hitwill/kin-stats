@@ -236,14 +236,40 @@ async function updateDominance(transactionURL, volume, day, year) {
         });
 }
 
+async function updateBigTrades(operation) {
+    var amount = operation.amount;
+    var transaction_hash = operation.transaction_hash;
+    var transactionURL = operation._links.transaction.href;
+    let sql;
+    request({ url: transactionURL, json: true },
+        function (error, response, payment) {
+            let app = '';
+            if (!error && response.statusCode == 200) {
+                try {
+                    app = payment.memo.split('-')[1];
+                } catch (e) {//no memo in payment
+                    return (false);
+                }
 
+                if (typeof app === 'undefined') return (false);
+                if (app === null) return (false);
+                sql = 'INSERT INTO big_trades SET app = ' + SqlString.escape(app)
+                    + ', transaction_hash = ' + SqlString.escape(transaction_hash)
+                    + ', amount = ' + amount
+                dbThrottled(sql);
+            }
+        });
+
+
+
+}
 
 async function parseOperation(operation) {
     const record = {};
     record.cursor = operation.id;
     record.time = parseDate(operation.created_at);
     record.table = operation.type;//this is the table where we save it
-
+   
 
     if (operation.type === 'create_account') {
         record.fields = {
@@ -252,7 +278,14 @@ async function parseOperation(operation) {
     }
     if (operation.type === 'payment') {
         if (operation.asset_code !== 'KIN') return (false);//not interested
-        if (operation.amount > 10000) return (false);//unlikely a user spend
+        if (operation.amount > 10000) {
+            try {
+               updateBigTrades(operation);
+            } catch (e) {
+                //some info was missing
+            }
+            return (false);//unlikely a user spend
+        }
         updateDominance(operation._links.transaction.href, operation.amount, record.time.day, record.time.year);
         record.account_id_from = operation.from;//either Kin foudnation is paying to ME or i'm paying to SOMEONE
         record.account_id_to = operation.to;//either Kin foudnation is paying to ME or i'm paying to SOMEONE
