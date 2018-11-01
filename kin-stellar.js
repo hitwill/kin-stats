@@ -211,8 +211,9 @@ async function fetchOperations() {
         });
 }
 
-async function updateDominance(transactionURL, volume, day, year) {
+async function updateDominance(transactionURL, volume, quantity, users, day, year) {
     let sql;
+    
     request({ url: transactionURL, json: true },
         function (error, response, payment) {
             let app = '';
@@ -225,12 +226,15 @@ async function updateDominance(transactionURL, volume, day, year) {
 
                 if (typeof app === 'undefined') return (false);
                 if (app === null) return (false);
+                
                 sql = 'INSERT INTO app_dominance SET app = ' + SqlString.escape(app)
                     + ', volume = ' + volume
-                    + ', quantity = 1'
+                    + ', quantity = ' + quantity
                     + ', day = ' + day
                     + ', year = ' + year
-                    + ' ON DUPLICATE KEY UPDATE quantity = quantity + 1, volume = volume + ' + volume;
+                    + ', users = ' + users
+                    + ' ON DUPLICATE KEY UPDATE quantity = quantity + ' 
+                    + quantity + ', volume = volume + ' + volume + ', users = users + ' + users;
                 dbThrottled(sql);
             }
         });
@@ -275,6 +279,7 @@ async function parseOperation(operation) {
         record.fields = {
             quantity: 1
         };
+        updateDominance(operation._links.transaction.href, 0,0,1, record.time.day, record.time.year);
     }
     if (operation.type === 'payment') {
         if (operation.asset_code !== 'KIN') return (false);//not interested
@@ -286,7 +291,10 @@ async function parseOperation(operation) {
             }
             return (false);//unlikely a user spend
         }
-        updateDominance(operation._links.transaction.href, operation.amount, record.time.day, record.time.year);
+        updateDominance(operation._links.transaction.href, operation.amount, 1, 0, record.time.day, record.time.year);
+
+        return (true);//TODO: remove after testing!!
+
         record.account_id_from = operation.from;//either Kin foudnation is paying to ME or i'm paying to SOMEONE
         record.account_id_to = operation.to;//either Kin foudnation is paying to ME or i'm paying to SOMEONE
         record.fields =
