@@ -293,8 +293,6 @@ async function parseOperation(operation) {
         }
         updateDominance(operation._links.transaction.href, operation.amount, 1, 0, record.time.day, record.time.year);
 
-        return (true);//TODO: remove after testing!!
-
         record.account_id_from = operation.from;//either Kin foudnation is paying to ME or i'm paying to SOMEONE
         record.account_id_to = operation.to;//either Kin foudnation is paying to ME or i'm paying to SOMEONE
         record.fields =
