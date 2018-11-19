@@ -10,10 +10,11 @@ const request = require('request');
 const algebra = require("algebra.js");
 
 const limiter = new Bottleneck({
-    maxConcurrent: 1,// Never more than x request running at a time.
-    minTime: 5, // Wait at least x ms between each request.
-    expiration: 3000
+    maxConcurrent: 5,// Never more than x request running at a time. boosted from 1 to 5
+    minTime: 1, // Wait at least x ms between each request. boosted from 5 to 1
+    expiration: 3000 //milliseconds to wait before abandoning query
 });
+
 limiter.on('error', function (error) {
     console.log('limiter error', error);
 });
@@ -39,7 +40,7 @@ async function test() {
 
 let operations;
 //test();
-//start();
+start();
 
 function getK(price_0, price_1, nodes_0, nodes_1) {
     if (price_1 < price_0) return (false);
@@ -272,9 +273,9 @@ async function parseOperation(operation) {
     const record = {};
     record.cursor = operation.id;
     record.time = parseDate(operation.created_at);
+    
     record.table = operation.type;//this is the table where we save it
    
-
     if (operation.type === 'create_account') {
         record.fields = {
             quantity: 1
@@ -326,6 +327,7 @@ async function saveData(record, cursorType) {
     QuerySql = QuerySql + keyString + ', ' + fields;
     QuerySql = QuerySql + ' ON DUPLICATE KEY UPDATE ' + fields;
 
+    
     dbThrottled(QuerySql);//update but don't overwhelm the database
     dbThrottled(cursorSql);
 }
