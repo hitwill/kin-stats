@@ -117,19 +117,21 @@ function coinStatsURL(key, value) {
 async function updateCoinStats() {
     let capSql;
     let priceSql;
-
-    coinmarketcap.on("KIN", (coin) => {
-        capSql = coinStatsURL('KIN_marketcap', coin.market_cap_usd);
-        priceSql = coinStatsURL('KIN_price', coin.price_usd);
-        dbThrottled(priceSql);
-        dbThrottled(capSql);
-        updateSocialStats();//fetch social stats from coingecko - doesn't have a timer, so we just use this
-        updateMetacalf();//estimate metacalf's future prices
-    });
     coinmarketcap.on("BTC", (coin) => {
         capSql = coinStatsURL('BTC_marketcap', coin.market_cap_usd);
         dbThrottled(capSql);
+
+        //conmarketcap bug is not fetching Kin from events - so have to do this
+        coinmarketcap.get("kin", coin => {
+            capSql = coinStatsURL('KIN_marketcap', coin.market_cap_usd);
+            priceSql = coinStatsURL('KIN_price', coin.price_usd);
+            dbThrottled(priceSql);
+            dbThrottled(capSql);
+            updateSocialStats();//fetch social stats from coingecko - doesn't have a timer, so we just use this
+            updateMetacalf();//estimate metacalf's future prices
+        });
     });
+    
 }
 
 
