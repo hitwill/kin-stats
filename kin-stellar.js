@@ -46,7 +46,7 @@ async function test() {
 
 let operations;
 //test();
-start();
+//start();
 
 function getK(price_0, price_1, nodes_0, nodes_1) {
     if (price_1 < price_0) return (false);
@@ -318,7 +318,7 @@ async function parseOperation(operation) {
     if (operation.type === 'create_account') {
         accountQuantity++;
         updateDominance(operation._links.transaction.href, 0, 0, 1, record.time.day, record.time.year);
-        if (accountQuantity < 3600) return (true);
+        if (accountQuantity < 36000) return (true);
         record.fields = {
             quantity: accountQuantity
         };
@@ -381,7 +381,7 @@ async function updateOperationsCount(hour, day, year) {
     let app = '';
     
     operationCount++;
-    if (operationCount >= 3600) {
+    if (operationCount >= 36000) {
         sql = 'INSERT INTO operations SET '
             + ' quantity = ' + operationCount
             + ', hour = ' + hour
