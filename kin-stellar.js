@@ -9,7 +9,7 @@ const Bottleneck = require("bottleneck");
 const request = require('request');
 const algebra = require("algebra.js");
 const limiter = new Bottleneck({
-    maxConcurrent: 5,// Never more than x request running at a time. boosted from 1 to 5
+    maxConcurrent: 1,// Leave at 1 to prevent deadlocks
     minTime: 1, // Wait at least x ms between each request. boosted from 5 to 1
     expiration: 3000 //milliseconds to wait before abandoning query
 });
@@ -46,7 +46,7 @@ async function test() {
 
 let operations;
 //test();
-//start();
+start();
 
 function getK(price_0, price_1, nodes_0, nodes_1) {
     if (price_1 < price_0) return (false);
