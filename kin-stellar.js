@@ -318,7 +318,7 @@ async function parseOperation(operation) {
     if (operation.type === 'create_account') {
         accountQuantity++;
         updateDominance(operation._links.transaction.href, 0, 0, 1, record.time.day, record.time.year);
-        if (accountQuantity < 36000) return (true);
+        if (accountQuantity < 3600) return (true);
         record.fields = {
             quantity: accountQuantity
         };
@@ -381,7 +381,7 @@ async function updateOperationsCount(hour, day, year) {
     let app = '';
     
     operationCount++;
-    if (operationCount >= 36000) {
+    if (operationCount >= 3600) {
         sql = 'INSERT INTO operations SET '
             + ' quantity = ' + operationCount
             + ', hour = ' + hour
