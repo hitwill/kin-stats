@@ -8,7 +8,6 @@ const coinmarketcap = new CoinMarketCap({ events: true });
 const Bottleneck = require("bottleneck");
 const request = require('request');
 const algebra = require("algebra.js");
-
 const limiter = new Bottleneck({
     maxConcurrent: 5,// Never more than x request running at a time. boosted from 1 to 5
     minTime: 1, // Wait at least x ms between each request. boosted from 5 to 1
@@ -29,6 +28,13 @@ const CONNECTION_PARAMS = {
 
 
 const server = new StellarSdk.Server('https://horizon-kin-ecosystem.kininfrastructure.com');
+var operationCount = 0;//total number of operations recorded
+var dominanceTransactions = 0;
+var dominanceVolume = 0;
+var dominanceQuantity = 0;
+var dominanceUsers = 0;
+var accountQuantity = 0;
+
 StellarSdk.Network.usePublicNetwork();
 
 async function test() {
@@ -114,10 +120,19 @@ function coinStatsURL(key, value) {
     return (coinStatsURL);
 }
 
+function getMinute() {
+    var d = new Date();
+    var n = d.getMinutes();
+    return (n);
+}
+
 async function updateCoinStats() {
     let capSql;
     let priceSql;
+    let minute;
     coinmarketcap.on("BTC", (coin) => {
+        minute = getMinute();
+        if (minute > 10) return (true);// only update at the begining of the hour, to save db usage
         capSql = coinStatsURL('BTC_marketcap', coin.market_cap_usd);
         dbThrottled(capSql);
 
@@ -214,6 +229,7 @@ async function fetchOperations() {
         });
 }
 
+
 async function updateDominance(transactionURL, volume, quantity, users, day, year) {
     let sql;
     
@@ -226,19 +242,39 @@ async function updateDominance(transactionURL, volume, quantity, users, day, yea
                 } catch (e) {//no memo in payment
                     return (false);
                 }
-
+                
                 if (typeof app === 'undefined') return (false);
                 if (app === null) return (false);
+                dominanceTransactions++;
+                if (typeof dominanceQuantity[app] === 'undefined') {
+                    dominanceQuantity[app] = 0;
+                    dominanceVolume[app] = 0;
+                    dominanceUsers[app] = 0;
+                }
+
+                dominanceQuantity[app] += quantity;
+                dominanceVolume[app] += volume;
+                dominanceUsers[app] += users;
+                if (dominanceTransactions < 10000) return (false);
+
+                Object.keys(dominanceQuantity).forEach(function (key, index) {
+                    sql = 'INSERT INTO app_dominance SET app = ' + SqlString.escape(key)
+                        + ', volume = ' + dominanceVolume[key]
+                        + ', quantity = ' + dominanceQuantity[key]
+                        + ', day = ' + day
+                        + ', year = ' + year
+                        + ', users = ' + dominanceUsers[key]
+                        + ' ON DUPLICATE KEY UPDATE quantity = quantity + '
+                        + dominanceQuantity[key] + ', volume = volume + '
+                        + dominanceVolume[key] + ', users = users + ' + dominanceUsers[key];
+                    dbThrottled(sql);
+                }, dominanceQuantity);
+
                 
-                sql = 'INSERT INTO app_dominance SET app = ' + SqlString.escape(app)
-                    + ', volume = ' + volume
-                    + ', quantity = ' + quantity
-                    + ', day = ' + day
-                    + ', year = ' + year
-                    + ', users = ' + users
-                    + ' ON DUPLICATE KEY UPDATE quantity = quantity + ' 
-                    + quantity + ', volume = volume + ' + volume + ', users = users + ' + users;
-                dbThrottled(sql);
+                dominanceVolume = 0;
+                dominanceQuantity = 0;
+                dominanceUsers = 0;
+                dominanceTransactions = 0;
             }
         });
 }
@@ -271,6 +307,7 @@ async function updateBigTrades(operation) {
 
 }
 
+
 async function parseOperation(operation) {
     const record = {};
     record.cursor = operation.id;
@@ -279,10 +316,14 @@ async function parseOperation(operation) {
     record.table = operation.type;//this is the table where we save it
    
     if (operation.type === 'create_account') {
+        accountQuantity++;
+        updateDominance(operation._links.transaction.href, 0, 0, 1, record.time.day, record.time.year);
+        if (accountQuantity < 36000) return (true);
         record.fields = {
-            quantity: 1
+            quantity: accountQuantity
         };
-        updateDominance(operation._links.transaction.href, 0,0,1, record.time.day, record.time.year);
+        accountQuantity = 0;
+        
     }
     if (operation.type === 'payment') {
         if (operation.asset_code !== 'KIN') return (false);//not interested
@@ -338,14 +379,19 @@ async function saveData(record, cursorType) {
 async function updateOperationsCount(hour, day, year) {
     let sql;
     let app = '';
-
-    sql = 'INSERT INTO operations SET '
-        + ' quantity = 1'
-        + ', hour = ' + hour
-        + ', day = ' + day
-        + ', year = ' + year
-        + ' ON DUPLICATE KEY UPDATE quantity = quantity + 1';
-    dbThrottled(sql);
+    
+    operationCount++;
+    if (operationCount >= 36000) {
+        sql = 'INSERT INTO operations SET '
+            + ' quantity = ' + operationCount
+            + ', hour = ' + hour
+            + ', day = ' + day
+            + ', year = ' + year
+            + ' ON DUPLICATE KEY UPDATE quantity = quantity + ' + operationCount;
+        dbThrottled(sql);
+        operationCount = 0;
+    }
+   
 }
 
 
