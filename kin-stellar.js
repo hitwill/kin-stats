@@ -232,7 +232,9 @@ async function fetchOperations() {
 
 async function updateDominance(transactionURL, volume, quantity, users, day, year) {
     let sql;
-    
+    //just update every 5th minute to conserve resources
+    let minute = getMinute();
+    if (minute % 5 != 0) return (false);
     request({ url: transactionURL, json: true },
         function (error, response, payment) {
             let app = '';
@@ -255,7 +257,7 @@ async function updateDominance(transactionURL, volume, quantity, users, day, yea
                 dominanceQuantity[app] += quantity;
                 dominanceVolume[app] += volume;
                 dominanceUsers[app] += users;
-                if (dominanceTransactions < 10000) return (false);
+                if (dominanceTransactions < 1000) return (false);
 
                 Object.keys(dominanceQuantity).forEach(function (key, index) {
                     sql = 'INSERT INTO app_dominance SET app = ' + SqlString.escape(key)
