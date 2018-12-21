@@ -221,6 +221,7 @@ async function fetchOperations() {
     await deleteLastCursorID(cursor, operationTypes);
     operations = server.operations()
         .cursor(cursor)
+        .limit(200)
         .stream({
             onmessage: function (message) {
                 updateOperationsCount(hourOfDay(), dayOfYear(), currentYear());
