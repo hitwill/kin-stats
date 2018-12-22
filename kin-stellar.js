@@ -321,7 +321,7 @@ async function parseOperation(operation) {
     if (operation.type === 'create_account') {
         accountQuantity++;
         updateDominance(operation._links.transaction.href, 0, 0, 1, record.time.day, record.time.year);
-        if (accountQuantity < 36000) return (true);
+        if (accountQuantity < 360) return (true);
         record.fields = {
             quantity: accountQuantity
         };
@@ -330,7 +330,7 @@ async function parseOperation(operation) {
     }
     if (operation.type === 'payment') {
         if (operation.asset_code !== 'KIN') return (false);//not interested
-        if (operation.amount > 10000) {
+        if (operation.amount > 100) {
             try {
                updateBigTrades(operation);
             } catch (e) {
@@ -384,7 +384,7 @@ async function updateOperationsCount(hour, day, year) {
     let app = '';
     
     operationCount++;
-    if (operationCount >= 36000) {
+    if (operationCount >= 360) {
         sql = 'INSERT INTO operations SET '
             + ' quantity = ' + operationCount
             + ', hour = ' + hour
