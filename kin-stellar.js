@@ -8,6 +8,8 @@ const coinmarketcap = new CoinMarketCap({ events: true });
 const Bottleneck = require("bottleneck");
 const request = require('request');
 const algebra = require("algebra.js");
+const dbThresh1 = 100;//for creating accounts and operations
+const dbThresh2 = 100;//for payments
 const limiter = new Bottleneck({
     maxConcurrent: 1,// Leave at 1 to prevent deadlocks
     minTime: 1, // Wait at least x ms between each request. boosted from 5 to 1
@@ -46,7 +48,7 @@ async function test() {
 
 let operations;
 //test();
-//start();
+start();
 
 function getK(price_0, price_1, nodes_0, nodes_1) {
     if (price_1 < price_0) return (false);
@@ -321,7 +323,7 @@ async function parseOperation(operation) {
     if (operation.type === 'create_account') {
         accountQuantity++;
         updateDominance(operation._links.transaction.href, 0, 0, 1, record.time.day, record.time.year);
-        if (accountQuantity < 360) return (true);
+        if (accountQuantity < dbThresh1) return (true);
         record.fields = {
             quantity: accountQuantity
         };
@@ -330,7 +332,7 @@ async function parseOperation(operation) {
     }
     if (operation.type === 'payment') {
         if (operation.asset_code !== 'KIN') return (false);//not interested
-        if (operation.amount > 100) {
+        if (operation.amount > dbThresh2) {
             try {
                updateBigTrades(operation);
             } catch (e) {
@@ -373,7 +375,6 @@ async function saveData(record, cursorType) {
     QuerySql = QuerySql + keyString + ', ' + fields;
     QuerySql = QuerySql + ' ON DUPLICATE KEY UPDATE ' + fields;
 
-    
     dbThrottled(QuerySql);//update but don't overwhelm the database
     dbThrottled(cursorSql);
 }
@@ -384,7 +385,7 @@ async function updateOperationsCount(hour, day, year) {
     let app = '';
     
     operationCount++;
-    if (operationCount >= 360) {
+    if (operationCount >= dbThresh1) {
         sql = 'INSERT INTO operations SET '
             + ' quantity = ' + operationCount
             + ', hour = ' + hour

@@ -5,13 +5,13 @@
   "main": "kin-stellar.js",
   "dependencies": {
     "algebra.js": "^0.2.6",
-    "bottleneck": "^2.5.1",
+    "bottleneck": "^2.14.0",
     "forever-monitor": "^1.7.1",
     "node-coinmarketcap": "^0.2.0",
     "promise-mysql": "^3.3.1",
     "sqlstring": "^2.3.1",
     "stellar-base": "^0.7.8",
-    "stellar-sdk": "^0.9.1"
+    "stellar-sdk": "^0.9.2"
   },
   "devDependencies": {},
   "scripts": {
