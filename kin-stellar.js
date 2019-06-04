@@ -29,7 +29,7 @@ const CONNECTION_PARAMS = {
 };
 
 
-const server = new StellarSdk.Server('https://horizon-kin-ecosystem.kininfrastructure.com');
+const server = new StellarSdk.Server('https://horizon-block-explorer.kininfrastructure.com');
 var operationCount = 0;//total number of operations recorded
 var dominanceTransactions = 0;
 var dominanceVolume = 0;
